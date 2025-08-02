@@ -21,24 +21,27 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
 
-    if (argc == 3) {
-        domain_size = atoi(argv[1]);
-        max_steps = atoi(argv[2]);
-    } else if (argc == 1) {
-        // Read from stdin if no command-line arguments
-        if (world_rank == 0) {
-            std::cin >> domain_size >> max_steps;
+
+    bool read_from_stdin = false;
+    if (world_rank == 0) {
+        // Try to read from stdin
+        if (!(std::cin >> domain_size >> max_steps)) {
+            // If stdin is empty, use command-line arguments
+            if (argc == 3) {
+                domain_size = atoi(argv[1]);
+                max_steps = atoi(argv[2]);
+            } else {
+                std::cerr << "Usage: mpirun -np <p> " << argv[0] << " <domain_size> <max_steps>" << std::endl;
+                MPI_Finalize();
+                return 1;
+            }
+        } else {
+            read_from_stdin = true;
         }
-        // Broadcast values to all processes
-        MPI_Bcast(&domain_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&max_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    } else {
-        if (world_rank == 0) {
-            std::cerr << "Usage: mpirun -np <p> " << argv[0] << " <domain_size> <max_steps>" << std::endl;
-        }
-        MPI_Finalize();
-        return 1;
     }
+    // Broadcast values to all processes
+    MPI_Bcast(&domain_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&max_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (world_rank == 0)
     {
