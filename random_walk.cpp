@@ -91,19 +91,14 @@ void walker_process()
 
 void controller_process()
 {
-    // Determine the number of walkers (world_size - 1)
     int num_walkers = world_size - 1;
-    
-    // Loop that many times to receive a message from each walker
     for (int i = 0; i < num_walkers; i++)
     {
         int received_steps;
         MPI_Status status;
-        
-        // Use MPI_Recv to wait for a message from any walker that finishes
         MPI_Recv(&received_steps, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+        int walker_rank = status.MPI_SOURCE;
+        std::cout << "Walker " << walker_rank << " finished in " << received_steps << " steps." << std::endl;
     }
-    
-    // After receiving messages from all walkers, print a final summary message
-    std::cout << "Controller: All " << num_walkers << " walkers have completed their walks." << std::endl;
+    std::cout << "All walkers have completed their walks." << std::endl;
 }
