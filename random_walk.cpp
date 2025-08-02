@@ -74,8 +74,8 @@ void walker_process()
         }
     }
     
-    // Print exactly "finished" as required by the test
-    std::cout << "finished" << std::endl;
+    // Print the walker finished message in the required format
+    std::cout << "Rank " << world_rank << ": Walker finished in " << steps << " steps." << std::endl;
     
     // Send an integer message to the controller (rank 0) to signal completion
     int completion_signal = steps; // Send the number of steps taken
@@ -97,6 +97,6 @@ void controller_process()
         MPI_Recv(&received_steps, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
     }
     
-    // Print "finished" for controller to match test requirements
-    std::cout << "finished" << std::endl;
+    // Print the final summary message
+    std::cout << "Controller: All " << num_walkers << " walkers have completed their walks." << std::endl;
 }
