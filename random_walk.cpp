@@ -20,28 +20,18 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-
-
-    if (world_rank == 0) {
-        if (argc == 3) {
-            domain_size = atoi(argv[1]);
-            max_steps = atoi(argv[2]);
-        }
-        // Always try to read from stdin, even if arguments were provided
-        int d, m;
-        if (std::cin >> d >> m) {
-            domain_size = d;
-            max_steps = m;
-        } else if (argc != 3) {
-            // No stdin and no arguments
+    if (argc != 3)
+    {
+        if (world_rank == 0)
+        {
             std::cerr << "Usage: mpirun -np <p> " << argv[0] << " <domain_size> <max_steps>" << std::endl;
-            MPI_Finalize();
-            return 1;
         }
+        MPI_Finalize();
+        return 1;
     }
-    // Broadcast values to all processes
-    MPI_Bcast(&domain_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&max_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    domain_size = atoi(argv[1]);
+    max_steps = atoi(argv[2]);
 
     if (world_rank == 0)
     {
@@ -63,7 +53,7 @@ void walker_process()
 {
     // Seed the random number generator.
     // Using rank ensures each walker gets a different sequence of random numbers.
-    srand(time(NULL) + world_rank);
+    srand(time(NULL) * world_rank);
 
     // Initialize the walker's position to 0
     int position = 0;
@@ -77,31 +67,36 @@ void walker_process()
         position += direction;
         
         // Check if the walker has moved outside the domain [-domain_size, +domain_size]
-        if (position <= -domain_size || position >= domain_size)
+        if (position < -domain_size || position > domain_size)
         {
+            steps++; // Count this step before breaking
             break; // Walk is finished - out of bounds
         }
     }
     
-    
-    // First print the finished message
-    std::cout << "Rank " << world_rank << ": Walker finished in " << steps + 1 << " steps." << std::endl;
+    // Print a message including the keyword "finished"
+    std::cout << "Rank " << world_rank << ": Walker finished in " << steps << " steps." << std::endl;
     
     // Send an integer message to the controller (rank 0) to signal completion
-    int completion_signal = steps + 1; // Send the number of steps taken
+    int completion_signal = steps; // Send the number of steps taken
     MPI_Send(&completion_signal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 }
 
 void controller_process()
 {
+    // Determine the number of walkers (world_size - 1)
     int num_walkers = world_size - 1;
+    
+    // Loop that many times to receive a message from each walker
     for (int i = 0; i < num_walkers; i++)
     {
         int received_steps;
         MPI_Status status;
+        
+        // Use MPI_Recv to wait for a message from any walker that finishes
         MPI_Recv(&received_steps, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-        int walker_rank = status.MPI_SOURCE;
-        std::cout << "Walker " << walker_rank << " finished in " << received_steps << " steps." << std::endl;
     }
-    std::cout << "All " << num_walkers << " walkers have completed their walks." << std::endl;
+    
+    // After receiving messages from all walkers, print a final summary message
+    std::cout << "Controller: All " << num_walkers << " walkers have finished." << std::endl;
 }
