@@ -22,21 +22,21 @@ int main(int argc, char **argv)
 
 
 
-    bool read_from_stdin = false;
     if (world_rank == 0) {
-        // Try to read from stdin
-        if (!(std::cin >> domain_size >> max_steps)) {
-            // If stdin is empty, use command-line arguments
-            if (argc == 3) {
-                domain_size = atoi(argv[1]);
-                max_steps = atoi(argv[2]);
-            } else {
-                std::cerr << "Usage: mpirun -np <p> " << argv[0] << " <domain_size> <max_steps>" << std::endl;
-                MPI_Finalize();
-                return 1;
-            }
-        } else {
-            read_from_stdin = true;
+        if (argc == 3) {
+            domain_size = atoi(argv[1]);
+            max_steps = atoi(argv[2]);
+        }
+        // Always try to read from stdin, even if arguments were provided
+        int d, m;
+        if (std::cin >> d >> m) {
+            domain_size = d;
+            max_steps = m;
+        } else if (argc != 3) {
+            // No stdin and no arguments
+            std::cerr << "Usage: mpirun -np <p> " << argv[0] << " <domain_size> <max_steps>" << std::endl;
+            MPI_Finalize();
+            return 1;
         }
     }
     // Broadcast values to all processes
