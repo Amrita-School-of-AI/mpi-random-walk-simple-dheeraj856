@@ -33,6 +33,16 @@ int main(int argc, char **argv)
     domain_size = atoi(argv[1]);
     max_steps = atoi(argv[2]);
 
+    if (domain_size <= 0 || max_steps <= 0)
+    {
+        if (world_rank == 0)
+        {
+            std::cerr << "Error: domain_size and max_steps must be positive integers." << std::endl;
+        }
+        MPI_Finalize();
+        return 1;
+    }
+
     if (world_rank == 0)
     {
         // Rank 0 is the controller
@@ -51,7 +61,7 @@ int main(int argc, char **argv)
 
 void walker_process()
 {
-    // Seed the random number generator with rank and time to ensure different sequences
+    // Seed the random number generator
     srand(time(NULL) + world_rank);
 
     // Initialize the walker's position to 0
@@ -73,8 +83,9 @@ void walker_process()
         }
     }
 
-    // Print the required output format
+    // Print the required output format and flush immediately
     std::cout << "Rank " << world_rank << ": Walker finished in " << steps << " steps." << std::endl;
+    std::cout.flush(); // Ensure output is sent immediately
 
     // Send the number of steps to the controller (rank 0)
     int completion_signal = steps;
@@ -96,6 +107,7 @@ void controller_process()
         MPI_Recv(&received_steps, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
     }
 
-    // Print the final summary message
+    // Print the final summary message and flush
     std::cout << "Controller: All " << num_walkers << " walkers have completed their walks." << std::endl;
+    std::cout.flush(); // Ensure output is sent immediately
 }
