@@ -83,8 +83,6 @@ void walker_process()
         }
     }
     
-    // Print a message including the keyword "finished"
-    std::cout << "Rank " << world_rank << ": Walker finished in " << (steps + 1) << " steps." << std::endl;
     
     // Send an integer message to the controller (rank 0) to signal completion
     int completion_signal = steps + 1; // Send the number of steps taken
