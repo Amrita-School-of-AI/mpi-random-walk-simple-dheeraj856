@@ -20,18 +20,25 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    if (argc != 3)
-    {
-        if (world_rank == 0)
-        {
+
+    if (argc == 3) {
+        domain_size = atoi(argv[1]);
+        max_steps = atoi(argv[2]);
+    } else if (argc == 1) {
+        // Read from stdin if no command-line arguments
+        if (world_rank == 0) {
+            std::cin >> domain_size >> max_steps;
+        }
+        // Broadcast values to all processes
+        MPI_Bcast(&domain_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&max_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    } else {
+        if (world_rank == 0) {
             std::cerr << "Usage: mpirun -np <p> " << argv[0] << " <domain_size> <max_steps>" << std::endl;
         }
         MPI_Finalize();
         return 1;
     }
-
-    domain_size = atoi(argv[1]);
-    max_steps = atoi(argv[2]);
 
     if (world_rank == 0)
     {
