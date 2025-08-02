@@ -84,6 +84,9 @@ void walker_process()
     }
     
     
+    // First print the finished message
+    std::cout << "Rank " << world_rank << ": Walker finished in " << steps + 1 << " steps." << std::endl;
+    
     // Send an integer message to the controller (rank 0) to signal completion
     int completion_signal = steps + 1; // Send the number of steps taken
     MPI_Send(&completion_signal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
@@ -100,5 +103,5 @@ void controller_process()
         int walker_rank = status.MPI_SOURCE;
         std::cout << "Walker " << walker_rank << " finished in " << received_steps << " steps." << std::endl;
     }
-    std::cout << "All walkers have completed their walks." << std::endl;
+    std::cout << "All " << num_walkers << " walkers have completed their walks." << std::endl;
 }
